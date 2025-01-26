@@ -1,7 +1,7 @@
 -- Charger la bibliothèque DFPWM
 local dfpwm = require("NewLua.Audio.dfpwm")
 
--- Trouver une disquette pour le stockage temporaire
+-- Fonction pour trouver une disquette
 local function findDiskDrive()
     for _, side in ipairs(peripheral.getNames()) do
         if peripheral.getType(side) == "drive" and disk.isPresent(side) then
@@ -11,7 +11,7 @@ local function findDiskDrive()
     return nil
 end
 
--- Téléchargement d'un fichier depuis une URL
+-- Fonction pour télécharger un fichier
 local function downloadFile(url, outputFile)
     print("Téléchargement du fichier depuis l'URL :", url)
     local response = http.get(url)
@@ -27,7 +27,7 @@ local function downloadFile(url, outputFile)
     print("Fichier téléchargé et sauvegardé sous :", outputFile)
 end
 
--- Lecture de fichiers DFPWM (alternative avec playSound)
+-- Fonction pour lire un fichier DFPWM
 local function playDFPWM(filePath)
     local decoder = dfpwm.make_decoder()
     local speaker = peripheral.find("speaker")
@@ -48,19 +48,17 @@ local function playDFPWM(filePath)
         if not chunk then break end
 
         local decoded = decoder(chunk)
+        speaker.playAudio(decoded)
 
-        -- Alternatif : jouer un son via playSound
-        -- Simulation de lecture de DFPWM en envoyant des notifications sonores.
-        for i = 1, #decoded do
-            speaker.playSound("minecraft:block.note_block.bell", decoded[i])
-        end
+        -- Ajouter une pause pour éviter l'erreur "Too long without yielding"
+        os.sleep(0.05)
     end
 
     file.close()
     print("Lecture terminée :", filePath)
 end
 
--- Lecture d'un fichier DFPWM à partir d'une URL, avec gestion de disquette
+-- Fonction pour jouer un fichier DFPWM à partir d'une URL
 local function playDFPWMFromURL(url)
     if not http then
         error("L'API HTTP n'est pas activée.")
