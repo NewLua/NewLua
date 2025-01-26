@@ -33,7 +33,11 @@ local native_select, native_type = select, type
 local function get_type_names(...)
     local types = table.pack(...)
     for i = types.n, 1, -1 do
-        if types[i] == "nil" then table.remove(types, i) end
+        if types[i] == "nil" then 
+            table.remove(types, i) 
+            os.queueEvent("yield") -- Insérer une pause
+            os.pullEvent("yield")
+        end
     end
 
     if #types <= 1 then
@@ -42,6 +46,7 @@ local function get_type_names(...)
         return table.concat(types, ", ", 1, #types - 1) .. " or " .. types[#types]
     end
 end
+
 
 
 local function get_display_type(value, t)
@@ -65,18 +70,22 @@ end
 -- @return The given `value`.
 -- @throws If the value is not one of the allowed types.
 local function expect(index, value, ...)
+    -- Vérification du type
     local t = native_type(value)
     for i = 1, native_select("#", ...) do
         if t == native_select(i, ...) then return value end
     end
 
-    -- If we can determine the function name with a high level of confidence, try to include it.
+    -- Insérer une pause
+    os.queueEvent("yield")
+    os.pullEvent("yield")
+
+    -- Générer un message d'erreur si le type ne correspond pas
     local name
     local ok, info = pcall(debug.getinfo, 3, "nS")
     if ok and info.name and info.name ~= "" and info.what ~= "C" then name = info.name end
 
     t = get_display_type(value, t)
-
     local type_names = get_type_names(...)
     if name then
         error(("bad argument #%d to '%s' (%s expected, got %s)"):format(index, name, type_names, t), 3)
