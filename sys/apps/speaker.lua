@@ -116,7 +116,7 @@ elseif cmd == "play" then
 
     print("Playing " .. file)
 
-    local decoder = pcm and pcm_decoder or require "NewLua.audio.dfpwm".make_decoder()
+    local decoder = pcm and pcm_decoder or require "NewLua.Audio.dfpwm".make_decoder()
     while true do
         local chunk = handle.read(size)
         if not chunk then break end
