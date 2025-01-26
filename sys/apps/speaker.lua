@@ -1,6 +1,16 @@
 -- Charger la bibliothèque DFPWM
 local dfpwm = require("NewLua.Audio.dfpwm")
 
+-- Trouver une disquette pour le stockage temporaire
+local function findDiskDrive()
+    for _, side in ipairs(peripheral.getNames()) do
+        if peripheral.getType(side) == "drive" and disk.isPresent(side) then
+            return side
+        end
+    end
+    return nil
+end
+
 -- Téléchargement d'un fichier depuis une URL
 local function downloadFile(url, outputFile)
     print("Téléchargement du fichier depuis l'URL :", url)
@@ -45,16 +55,30 @@ local function playDFPWM(filePath)
     print("Lecture terminée :", filePath)
 end
 
--- Lecture d'un fichier DFPWM à partir d'une URL
+-- Lecture d'un fichier DFPWM à partir d'une URL, avec gestion de disquette
 local function playDFPWMFromURL(url)
     if not http then
         error("L'API HTTP n'est pas activée.")
     end
 
-    local tempFile = "/tmp/temp.dfpwm" -- Fichier temporaire pour sauvegarder l'audio
+    local tempFile
+    local diskSide = findDiskDrive()
+
+    if diskSide then
+        tempFile = disk.getMountPath(diskSide) .. "/temp.dfpwm"
+        print("Utilisation de la disquette pour le stockage temporaire :", tempFile)
+    else
+        tempFile = "/tmp/temp.dfpwm"
+        print("Aucune disquette détectée, stockage temporaire local :", tempFile)
+    end
+
+    -- Télécharger et jouer le fichier
     downloadFile(url, tempFile)
     playDFPWM(tempFile)
-    fs.delete(tempFile) -- Nettoyer le fichier temporaire après la lecture
+
+    -- Nettoyer le fichier temporaire
+    fs.delete(tempFile)
+    print("Fichier temporaire supprimé :", tempFile)
 end
 
 -- Afficher l'aide de la commande
