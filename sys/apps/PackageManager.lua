@@ -7,7 +7,7 @@ local Util     = require('opus.util')
 local colors   = _G.colors
 local term     = _G.term
 
-UI:configure('PackageManager', ...)
+UI:configure('NewLua Store', ...)
 
 local config = Config.load('package')
 

@@ -9,7 +9,7 @@ local shell    = _ENV.shell
 
 local splashIntro = [[First Time Setup
 
-%sThanks for installing Opus OS. The next screens will prompt you for basic settings for this computer.]]
+%sThanks for installing NewLua OS. The next screens will prompt you for basic settings for this computer.]]
 local labelIntro = [[Set a friendly name for this computer.
 
 %sNo spaces recommended.]]
@@ -21,6 +21,12 @@ local packagesIntro = [[Setup Complete
 %sOpen the package manager to add software to this computer.]]
 local contributorsIntro = [[Contributors%s
 
+NewLua Teams :
+	Kiz___,
+		https://github.com/kizYTB
+	LePrOfOuRbUs,
+		https://github.com/Leprofourbus
+...
 Anavrins:    Encryption/security/custom apps
 Community:   Several selected applications
 hugeblank:   Startup screen improvements
@@ -28,7 +34,7 @@ LDDestroier: Art design + custom apps
 Lemmmy:      Application improvements
 
 %sContribute at:%s
-https://github.com/kepler155c/opus]]
+https://github.com/NewLua/NewLua]]
 
 local page = UI.Page {
 	wizard = UI.Wizard {
@@ -95,7 +101,7 @@ local page = UI.Page {
 			index = 4,
 			button = UI.Button {
 				x = 3, y = -3,
-				text = 'Open Package Manager',
+				text = 'Open NewLua Store',
 				event = 'packages',
 			},
 			intro = UI.TextArea {

@@ -24,7 +24,6 @@ local function Syntax(msg)
 end
 
 local function progress(max)
-	-- modified from: https://pastebin.com/W5ZkVYSi (apemanzilla)
 	local _, y = term.getCursorPos()
 	local wide, _ = term.getSize()
 	term.setCursorPos(1, y)
