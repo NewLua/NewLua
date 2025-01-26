@@ -1,6 +1,5 @@
 -- Charger la bibliothèque DFPWM
 local dfpwm = require("NewLua.Audio.dfpwm")
-
 -- Fonction pour trouver une disquette
 local function findDiskDrive()
     for _, side in ipairs(peripheral.getNames()) do
@@ -50,8 +49,9 @@ local function playDFPWM(filePath)
         local decoded = decoder(chunk)
         speaker.playAudio(decoded)
 
-        -- Ajouter une pause pour éviter l'erreur "Too long without yielding"
-        os.sleep(0.05)
+        -- Pause pour éviter l'erreur "Too long without yielding"
+        os.queueEvent("yield")
+        os.pullEvent("yield")
     end
 
     file.close()
