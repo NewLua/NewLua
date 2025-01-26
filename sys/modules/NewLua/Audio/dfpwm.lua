@@ -35,7 +35,7 @@ application or [FFmpeg] 5.1 or later.
 is then re-encoded and saved to "speedy.dfpwm". This processed audio can then be played with the `speaker` program.
 
 ```lua
-local dfpwm = require("cc.audio.dfpwm")
+local dfpwm = require("NewLua.audio.dfpwm")
 
 local encoder = dfpwm.make_encoder()
 local decoder = dfpwm.make_decoder()

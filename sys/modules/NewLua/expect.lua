@@ -10,7 +10,7 @@ function arguments are well-formed and of the correct type.
 @changed 1.96.0 The module can now be called directly as a function, which wraps around `expect.expect`.
 @usage Define a basic function and check it has the correct arguments.
 
-    local expect = require "cc.expect"
+    local expect = require "NewLua.expect"
     local expect, field = expect.expect, expect.field
 
     local function add_person(name, info)
