@@ -27,7 +27,7 @@ local function downloadFile(url, outputFile)
     print("Fichier téléchargé et sauvegardé sous :", outputFile)
 end
 
--- Lecture de fichiers DFPWM
+-- Lecture de fichiers DFPWM (alternative avec playSound)
 local function playDFPWM(filePath)
     local decoder = dfpwm.make_decoder()
     local speaker = peripheral.find("speaker")
@@ -48,7 +48,12 @@ local function playDFPWM(filePath)
         if not chunk then break end
 
         local decoded = decoder(chunk)
-        speaker.playAudio(decoded)
+
+        -- Alternatif : jouer un son via playSound
+        -- Simulation de lecture de DFPWM en envoyant des notifications sonores.
+        for i = 1, #decoded do
+            speaker.playSound("minecraft:block.note_block.bell", decoded[i])
+        end
     end
 
     file.close()
