@@ -1,4 +1,4 @@
-# Opus OS for computercraft
+# NewLua for computercraft
 
 <img src="https://github.com/kepler155c/opus-wiki/blob/master/assets/images/opus.gif?raw=true" width="540" height="360">
 
@@ -16,5 +16,5 @@
 
 ## Install
 ```
-pastebin run UzGHLbNC
+pastebin run yQCKAxix
 ```
