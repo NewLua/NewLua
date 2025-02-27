@@ -24,8 +24,6 @@ local contributorsIntro = [[Contributors%s
 NewLua Teams :
 	Kiz___,
 		https://github.com/kizYTB
-	LePrOfOuRbUs,
-		https://github.com/Leprofourbus
 ...
 Anavrins:    Encryption/security/custom apps
 Community:   Several selected applications
