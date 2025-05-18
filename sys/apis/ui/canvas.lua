@@ -12,6 +12,7 @@ local Canvas = class()
 Canvas.colorPalette = { }
 Canvas.darkPalette = { }
 Canvas.grayscalePalette = { }
+Canvas.imageCache = { } -- Nouveau cache pour les images
 
 for n = 1, 16 do
 	Canvas.colorPalette[2 ^ (n - 1)]     = _sub("0123456789abcdef", n, n)
@@ -23,6 +24,9 @@ function Canvas:init(args)
 	self.x = 1
 	self.y = 1
 	self.layers = { }
+	self.images = { } -- Stockage des images
+	self.persistentImages = true -- Activer la persistance par défaut
+	self.logosInitialized = false
 
 	Util.merge(self, args)
 
@@ -39,8 +43,15 @@ function Canvas:init(args)
 
 	self.lines = { }
 	for i = 1, self.height do
-		self.lines[i] = { }
+		self.lines[i] = { 
+			text = _rep(' ', self.width),
+			fg = _rep(self.palette[colors.white], self.width),
+			bg = _rep(self.palette[colors.black], self.width),
+			dirty = true
+		}
 	end
+
+	self:initializeLogos()
 end
 
 function Canvas:move(x, y)
@@ -196,8 +207,14 @@ function Canvas:clear(bg, fg)
 	local text = _rep(' ', self.width)
 	fg = _rep(self.palette[fg or colors.white], self.width)
 	bg = _rep(self.palette[bg or colors.black], self.width)
+	
 	for i = 1, self.height do
 		self:writeLine(i, text, fg, bg)
+	end
+	
+	-- Restaurer les images après le clear
+	if self.persistentImages then
+		self:restoreImages()
 	end
 end
 
@@ -257,7 +274,7 @@ function Canvas:clean()
 	end
 end
 
-function Canvas:render(device, layers) --- redrawAll ?
+function Canvas:render(device, layers)
 	layers = layers or self.layers
 	if #layers > 0 then
 		self.regions = Region.new(self.x, self.y, self.ex, self.ey)
@@ -274,6 +291,10 @@ function Canvas:render(device, layers) --- redrawAll ?
 	else
 		self:blit(device)
 	end
+	
+	-- Restaurer les logos après le rendu
+	self:restoreImages()
+	
 	self:clean()
 end
 
@@ -500,4 +521,74 @@ function Canvas.scrollingWindow(win, wx, wy)
 
 	win.clear()
 end
+
+-- Nouvelle fonction pour dessiner une image
+function Canvas:drawImage(x, y, imageData)
+	if not imageData then return end
+	
+	local imgWidth = #imageData[1]
+	local imgHeight = #imageData
+	
+	for i = 1, imgHeight do
+		if y + i - 1 <= self.height then
+			local line = imageData[i]
+			self:writeBlit(x, y + i - 1, line.text, line.bg, line.fg)
+		end
+	end
+	
+	-- Sauvegarder l'image dans le cache
+	self.images[tostring(x)..","..tostring(y)] = {
+		x = x,
+		y = y,
+		data = imageData
+	}
+end
+
+-- Fonction pour restaurer toutes les images
+function Canvas:restoreImages()
+	if not self.persistentImages then return end
+	
+	for _, image in pairs(self.images) do
+		self:drawImage(image.x, image.y, image.data)
+	end
+end
+
+-- Nouvelle fonction pour gérer les logos des applications
+function Canvas:drawAppLogo(x, y, appName, logo)
+	-- Créer une clé unique pour ce logo
+	local logoKey = "app_logo_" .. appName
+	
+	-- Si le logo n'est pas déjà dans le cache, l'ajouter
+	if not self.imageCache[logoKey] then
+		self.imageCache[logoKey] = logo
+	end
+	
+	-- Dessiner le logo
+	self:drawImage(x, y, logo)
+	
+	-- Marquer ce logo comme persistant
+	self.images[logoKey] = {
+		x = x,
+		y = y,
+		data = logo,
+		isPersistent = true
+	}
+end
+
+-- Fonction pour initialiser les logos au démarrage
+function Canvas:initializeLogos()
+	if not self.logosInitialized then
+		-- Forcer le rechargement des logos depuis le cache
+		for key, image in pairs(self.imageCache) do
+			if key:match("^app_logo_") then
+				local storedImage = self.images[key]
+				if storedImage and storedImage.isPersistent then
+					self:drawImage(storedImage.x, storedImage.y, storedImage.data)
+				end
+			end
+		end
+		self.logosInitialized = true
+	end
+end
+
 return Canvas

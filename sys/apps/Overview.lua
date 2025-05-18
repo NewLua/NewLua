@@ -29,10 +29,9 @@ end
 
 local REGISTRY_DIR = 'usr/.registry'
 
--- iconExt:gsub('.', function(b) return '\\' .. b:byte() end)
-local DEFAULT_ICON = NFT.parse('\30\55\31\48\136\140\140\140\132\
-\30\48\31\55\149\31\48\128\128\128\30\55\149\
-\30\55\31\48\138\143\143\143\133')
+-- Correction des icônes uniquement
+local DEFAULT_ICON = NFT.parse('\0300\031f\136\140\132\0308\031 \130\030 \0318\144\010\157\0300\031f\147\030f\0310\142\143\030 \149\010\0300\031f\136\140\132\140\030 \0310\149')
+
 local TRANS_ICON = NFT.parse('\0302\0312\32\32\32\32\32\
 \0302\0312\32\32\32\32\32\
 \0302\0312\32\32\32\32\32')
@@ -66,11 +65,37 @@ local function ellipsis(s, len)
 	return s
 end
 
+local function saveIcon(icon, name)
+	if not fs.exists('usr/icons') then
+		fs.makeDir('usr/icons')
+	end
+	local f = fs.open('usr/icons/' .. name .. '.nft', 'w')
+	if f then
+		f.write(NFT.serialize(icon))
+		f.close()
+	end
+end
+
+local function loadIcon(name)
+	if fs.exists('usr/icons/' .. name .. '.nft') then
+		local f = fs.open('usr/icons/' .. name .. '.nft', 'r')
+		if f then
+			local content = f.readAll()
+			f.close()
+			return NFT.parse(content)
+		end
+	end
+	return DEFAULT_ICON
+end
+
+-- Fonction parseIcon originale avec une petite correction pour les icônes EXT
 local function parseIcon(iconText)
-	local icon
+	if not iconText then
+		return DEFAULT_ICON
+	end
 
 	local s, m = pcall(function()
-		icon = NFT.parse(iconText)
+		local icon = NFT.parse(iconText)
 		if icon then
 			if icon.height > 3 or icon.width > 8 then
 				error('Must be an NFT image - 3 rows, 8 cols max')
@@ -80,11 +105,11 @@ local function parseIcon(iconText)
 		return icon
 	end)
 
-	if s then
-		return icon
+	if s and m then
+		return m
 	end
 
-	return s, m
+	return DEFAULT_ICON
 end
 
 local page = UI.Page {
@@ -276,12 +301,15 @@ UI.Icon.defaults = {
 function UI.Icon:eventHandler(event)
 	if event.type == 'mouse_click' then
 		self:setFocus(self.button)
+		self:draw()
 		return true
 	elseif event.type == 'mouse_doubleclick' then
 		self:emit({ type = self.button.event, button = self.button })
+		self:draw()
 	elseif event.type == 'mouse_rightclick' then
 		self:setFocus(self.button)
 		self:emit({ type = 'edit', button = self.button })
+		self:draw()
 	end
 	return UI.Window.eventHandler(self, event)
 end
@@ -309,23 +337,27 @@ function page.container:setCategory(categoryName, animate)
 
 	for _,program in ipairs(filtered) do
 		local icon
-		if extSupport and program.iconExt then
+		-- Priorité au format EXT
+		if program.iconExt then
 			icon = parseIcon(program.iconExt)
-		end
-		if not icon and program.icon then
+		elseif program.icon then
 			icon = parseIcon(program.icon)
-		end
-		if not icon then
+		else
 			icon = DEFAULT_ICON
 		end
 
-		local title = ellipsis(program.title, 8)
+		-- Forcer la taille minimale de l'icône
+		if icon.width < 5 then icon.width = 5 end
+		if icon.height < 3 then icon.height = 3 end
 
+		local title = ellipsis(program.title, 8)
 		local width = math.max(icon.width + 2, #title + 2)
+
 		if config.listMode then
 			table.insert(self.children, UI.Icon {
 				width = self.width - 2,
 				height = 1,
+				backgroundColor = self:getProperty('backgroundColor'),
 				UI.Button {
 					x = 1, ex = -1,
 					text = program.title,
@@ -339,11 +371,14 @@ function page.container:setCategory(categoryName, animate)
 				}
 			})
 		else
-			table.insert(self.children, UI.Icon({
+			local iconWidget = UI.Icon({
 				width = width,
+				backgroundColor = self:getProperty('backgroundColor'),
 				image = UI.NftImage({
 					x = math.floor((width - icon.width) / 2) + 1,
+					y = 1,
 					image = icon,
+					backgroundColor = self:getProperty('backgroundColor'),
 				}),
 				button = UI.Button({
 					x = math.floor((width - #title - 2) / 2) + 1,
@@ -357,59 +392,35 @@ function page.container:setCategory(categoryName, animate)
 					event = 'button',
 					app = program,
 				}),
-			}))
+			})
+			iconWidget.draw = function(self)
+				self:clear()
+				if self.image then
+					self.image:draw()
+				end
+				if self.button then
+					self.button:draw()
+				end
+			end
+			table.insert(self.children, iconWidget)
 		end
 	end
 
+	-- Mise à jour de la disposition
 	local gutter = 2
 	if UI.term.width <= 26 then
 		gutter = 1
 	end
 	local col, row = gutter, 2
-	local count = #self.children
 
-	local r = math.random(1, 7)
-	local frames = 5
-	-- reposition all children
+	-- Repositionnement des icônes
 	for k,child in ipairs(self.children) do
-		if r == 1 then
-			child.x = math.random(1, self.width)
-			child.y = math.random(1, self.height - 3)
-		elseif r == 2 then
-			child.x = self.width
-			child.y = self.height - 3
-		elseif r == 3 then
-			child.x = math.floor(self.width / 2)
-			child.y = math.floor(self.height / 2)
-		elseif r == 4 then
-			child.x = self.width - col
-			child.y = row
-		elseif r == 5 then
-			child.x = col
-			child.y = row
-			if k == #self.children then
-				child.x = self.width
-				child.y = self.height - 3
-			end
-		elseif r == 6 then
-			child.x = col
-			child.y = 1
-		elseif r == 7 then
-			child.x = 1
-			child.y = self.height - 3
-		end
-		child.tween = Tween.new(frames, child, { x = col, y = row }, 'inQuad')
-
-		if not animate then
-			child.x = col
-			child.y = row
-		end
-
-		self:setViewHeight(row + (config.listMode and 1 or 4))
-
-		if k < count then
-			col = col + child.width
-			if col + self.children[k + 1].width + gutter - 2 > self.width then
+		child.x = col
+		child.y = row
+		
+		if k < #self.children then
+			col = col + child.width + 1
+			if col + self.children[k + 1].width + gutter > self.width then
 				col = gutter
 				row = row + (config.listMode and 1 or 5)
 			end
@@ -417,20 +428,8 @@ function page.container:setCategory(categoryName, animate)
 	end
 
 	self:initChildren()
-	if animate then
-		local function transition()
-			local i = 1
-			return function()
-				for _,child in pairs(self.children) do
-					child.tween:update(1)
-					child:move(math.floor(child.x), math.floor(child.y))
-				end
-				i = i + 1
-				return i <= frames
-			end
-		end
-		self:addTransition(transition)
-	end
+	self:draw()
+	self:sync()
 end
 
 function page:refresh()
@@ -567,10 +566,7 @@ function page.editor:loadImage(filename)
 		if not iconLines then
 			error('Must be an NFT image - 3 rows, 8 cols max')
 		end
-		local icon, m = parseIcon(iconLines)
-		if not icon then
-			error(m)
-		end
+		local icon = parseIcon(iconLines)
 		if extSupport then
 			self.form.values.iconExt = iconLines
 		else

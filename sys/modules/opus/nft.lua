@@ -38,7 +38,7 @@ function NFT.parse(imageText)
 		local writeIndex = 1
 		--Tells us if we've hit a 30 or 31 (BG and FG respectively)- next char specifies the curr colour
 
-		local tcol, bcol = colors.white,colors.black
+		local tcol, bcol = colors.white, colors.black
 		local cx, sx = 1, 0
 		while sx < #sLine do
 			sx = sx + 1
@@ -60,7 +60,7 @@ function NFT.parse(imageText)
 		if not image.width or writeIndex - 1 > image.width then
 			image.width = writeIndex - 1
 		end
-		num = num+1
+		num = num + 1
 	end
 	return image
 end
